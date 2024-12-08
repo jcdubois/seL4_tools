@@ -17,7 +17,7 @@
 #define LSR_THRE   BIT(5)
 #define LSR_RDR    BIT(0)
 
-#define UART_REG(mmio, x) ((volatile uint32_t *)(mmio + (x)))
+#define UART_REG(mmio, x) ((volatile uint8_t *)(mmio + (x)))
 
 static int ns16550_uart_putchar(struct elfloader_device *dev, unsigned int c)
 {
