@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: BSD-2-Clause
 #
 
-cmake_minimum_required(VERSION 3.7.2)
+cmake_minimum_required(VERSION 3.16.0)
 
 project(elfloader C ASM)
 
@@ -29,7 +29,7 @@ config_choice(
     "elf;ElfloaderImageELF;IMAGE_ELF;KernelArchARM OR KernelArchRiscV"
     "binary;ElfloaderImageBinary;IMAGE_BINARY;KernelArchARM OR KernelArchRiscV"
     "efi;ElfloaderImageEFI;IMAGE_EFI;KernelArchARM"
-    "uimage;ElfloaderImageUimage;IMAGE_UIMAGE;KernelArchARM"
+    "uimage;ElfloaderImageUimage;IMAGE_UIMAGE;KernelArchARM OR KernelArchRiscV"
 )
 
 config_choice(
@@ -105,8 +105,8 @@ config_option(
 
 add_config_library(elfloader "${configure_string}")
 
-add_compile_options(-D_XOPEN_SOURCE=700 -ffreestanding -Wall -Werror -W -Wextra)
-set(linkerScript "${CMAKE_CURRENT_LIST_DIR}/src/arch-${KernelArch}/linker.lds")
+add_compile_options(-D_XOPEN_SOURCE=700 -ffreestanding -Wall -Werror -Wextra)
+set(linkerScript "${CMAKE_CURRENT_LIST_DIR}/src/linker.lds")
 if(KernelArchRiscV)
     add_compile_options(-mcmodel=medany)
 endif()
@@ -250,11 +250,27 @@ endif()
 list(SORT files)
 
 set(cpio_files "")
-list(APPEND cpio_files "$<TARGET_FILE:kernel.elf>")
+add_custom_command(
+    OUTPUT "kernel.elf"
+    COMMAND
+        ${CMAKE_STRIP} $<TARGET_FILE:kernel.elf> -o ${CMAKE_CURRENT_BINARY_DIR}/kernel.elf
+    VERBATIM
+    DEPENDS "$<TARGET_FILE:kernel.elf>"
+)
+list(APPEND cpio_files "${CMAKE_CURRENT_BINARY_DIR}/kernel.elf")
+
 if(ElfloaderIncludeDtb)
     list(APPEND cpio_files "${KernelDTBPath}")
 endif()
-list(APPEND cpio_files "$<TARGET_PROPERTY:rootserver_image,ROOTSERVER_IMAGE>")
+add_custom_command(
+    OUTPUT "rootserver"
+    COMMAND
+        ${CMAKE_STRIP} $<TARGET_PROPERTY:rootserver_image,ROOTSERVER_IMAGE> -o
+        ${CMAKE_CURRENT_BINARY_DIR}/rootserver
+    VERBATIM
+    DEPENDS "$<TARGET_PROPERTY:rootserver_image,ROOTSERVER_IMAGE>"
+)
+list(APPEND cpio_files "${CMAKE_CURRENT_BINARY_DIR}/rootserver")
 if(NOT ${ElfloaderHashInstructions} STREQUAL "hash_none")
     set(hash_command "")
     if(ElfloaderHashSHA)

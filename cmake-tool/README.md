@@ -27,9 +27,9 @@ the actual build.
 It is assumed that
 
  * CMake of an appropriate version is installed
- * You are using the Ninja CMake generator 
+ * You are using the Ninja CMake generator
  * You understand how to checkout projects using the repo tool as described on the
-   [Getting started](https://docs.sel4.systems/GettingStarted) page
+   [seL4 docsite](https://docs.sel4.systems/Resources#running-sel4)
 
 #### Basic build initialisation
 
@@ -304,7 +304,7 @@ and so is relative to that directory.
 The contents of `awesome_system/awesome/CMakeLists.txt` would be something like
 
 ```cmake
-cmake_minimum_required(VERSION 3.7.2)
+cmake_minimum_required(VERSION 3.16.0)
 include(../buildsystem/cmake-tool/base.cmake)
 add_subdirectory(../seL4_libs seL4_libs)
 include(../buildsystem/cmake-tool/configuration.cmake)

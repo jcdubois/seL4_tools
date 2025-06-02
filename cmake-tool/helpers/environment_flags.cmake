@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: BSD-2-Clause
 #
 
-cmake_minimum_required(VERSION 3.7.2)
+cmake_minimum_required(VERSION 3.16.0)
 include_guard(GLOBAL)
 
 macro(add_default_compilation_options)
@@ -49,7 +49,12 @@ macro(add_default_compilation_options)
     endif()
 
     if(KernelSel4ArchAarch32)
-        add_compile_options(-mtp=soft)
+        # The arm-gnu-eabi* uses TPIDRURO as the default tls register.
+        # If this isn't what the kernel is configured to, generate function calls for
+        # thread pointer access.
+        if (NOT KernelArmTLSRegTPIDRURO)
+            add_compile_options(-mtp=soft)
+        endif()
     endif()
 
     # Don't allow unaligned data store/load instructions as this will cause an alignment
@@ -62,8 +67,10 @@ macro(add_default_compilation_options)
         endif()
         # special handling for GCC 10 and above
         if(
-            (CMAKE_C_COMPILER_ID STREQUAL "GNU")
-            AND (CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL "10.0.0")
+            ((CMAKE_C_COMPILER_ID STREQUAL "GNU")
+            AND (CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL "10.0.0"))
+            OR ((CMAKE_C_COMPILER_ID STREQUAL "Clang")
+            AND (CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL "12.0.0"))
         )
             add_compile_options(-mno-outline-atomics)
         endif()

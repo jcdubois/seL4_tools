@@ -6,16 +6,16 @@
 # SPDX-License-Identifier: BSD-2-Clause
 #
 
-cmake_minimum_required(VERSION 3.8.2)
+cmake_minimum_required(VERSION 3.16.0)
 include_guard(GLOBAL)
 
 function(ApplyData61ElfLoaderSettings kernel_platform kernel_sel4_arch)
     set(
         binary_list
-        "tx1;hikey;odroidc2;odroidc4;imx8mq-evk;imx8mm-evk;imx8mp-evk;hifive;tqma8xqp1gb;bcm2711;rocketchip;star64;ls1043a-rdb"
+        "tx1;hikey;odroidc2;odroidc4;imx8mq-evk;imx8mm-evk;imx8mp-evk;hifive;bcm2837;tqma8xqp1gb;imx93;bcm2711;rocketchip;star64;cheshire;ls1043a-rdb"
     )
     set(efi_list "tk1;rockpro64;quartz64")
-    set(uimage_list "tx2;am335x")
+    set(uimage_list "hifive-p550;tx2;am335x")
     if(
         ${kernel_platform} IN_LIST efi_list
         OR (${kernel_platform} STREQUAL "hikey" AND ${kernel_sel4_arch} STREQUAL "aarch64")
@@ -23,9 +23,6 @@ function(ApplyData61ElfLoaderSettings kernel_platform kernel_sel4_arch)
         set(ElfloaderImage "efi" CACHE STRING "" FORCE)
     elseif(${kernel_platform} IN_LIST uimage_list)
         set(ElfloaderImage "uimage" CACHE STRING "" FORCE)
-        #rpi3
-    elseif(${kernel_platform} STREQUAL "bcm2837" AND ${kernel_sel4_arch} STREQUAL "aarch64")
-        set(ElfloaderImage "binary" CACHE STRING "" FORCE)
     elseif(${kernel_platform} IN_LIST binary_list)
         set(ElfloaderImage "binary" CACHE STRING "" FORCE)
     else()
@@ -54,17 +51,28 @@ function(ApplyData61ElfLoaderSettings kernel_platform kernel_sel4_arch)
         set(ElfloaderArmV8LeaveAarch64 ON CACHE BOOL "" FORCE)
         set(IMAGE_START_ADDR 0x8000000 CACHE INTERNAL "" FORCE)
     endif()
-    if(KernelPlatformSpike AND KernelSel4ArchRiscV32)
-        set(IMAGE_START_ADDR 0x80400000 CACHE INTERNAL "" FORCE)
-    endif()
     if(KernelPlatformRpi4)
         if(KernelSel4ArchAarch32)
             set(ElfloaderArmV8LeaveAarch64 ON CACHE BOOL "" FORCE)
         endif()
         set(IMAGE_START_ADDR 0x10000000 CACHE INTERNAL "" FORCE)
     endif()
+    if(KernelPlatformSpike OR KernelPlatformQEMURiscVVirt)
+        # Spike/qemu loads elfloader to either 0x80200000 or 0x80400000
+        # But the RISC-V kernel is currently loaded to a different
+        # address than what's modelled by the shoehorn.py tool.
+        # So force the start address to one that works.
+        set(IMAGE_START_ADDR 0x81000000 CACHE INTERNAL "" FORCE)
+    endif()
     if(KernelPlatformStar64)
         set(IMAGE_START_ADDR 0x60000000 CACHE INTERNAL "" FORCE)
+    endif()
+    if(KernelPlatformCheshire)
+        set(UseRiscVOpenSBI OFF CACHE BOOL "" FORCE)
+        set(IMAGE_START_ADDR 0x80200000 CACHE INTERNAL "" FORCE)
+    endif()
+    if(KernelPlatformHifiveP550)
+        set(UseRiscVOpenSBI OFF CACHE BOOL "" FORCE)
     endif()
 endfunction()
 
